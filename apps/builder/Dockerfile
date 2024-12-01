@@ -14,6 +14,17 @@ COPY patches ./patches
 
 # tsconfig base.json in das Stammverzeichnis kopieren
 COPY packages/tsconfig/base.json ./base.json
+COPY packages/tsconfig/base.json ./packages/tsconfig/base.json
+# tsconfig base.json in die Verzeichnisse der einzelnen Pakete kopieren
+COPY packages/tsconfig/base.json ./packages/error-utils/tsconfig.base.json
+COPY packages/tsconfig/base.json ./packages/fonts/tsconfig.base.json
+COPY packages/tsconfig/base.json ./packages/icons/tsconfig.base.json
+COPY packages/tsconfig/base.json ./packages/image/tsconfig.base.json
+COPY packages/tsconfig/base.json ./packages/css-engine/tsconfig.base.json
+COPY packages/tsconfig/base.json ./packages/sdk/tsconfig.base.json
+COPY packages/tsconfig/base.json ./packages/http-client/tsconfig.base.json
+COPY packages/tsconfig/base.json ./packages/react-sdk/tsconfig.base.json
+COPY packages/tsconfig/base.json ./packages/sdk-components-react/tsconfig.base.json
 
 # Abhängigkeiten installieren
 RUN \
