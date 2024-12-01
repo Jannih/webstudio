@@ -12,6 +12,9 @@ COPY package.json pnpm-lock.yaml* ./
 # Patch-Dateien kopieren (falls vorhanden)
 COPY patches ./patches
 
+# tsconfig base.json in das node_modules-Verzeichnis des @webstudio-is/tsconfig-Pakets kopieren
+COPY packages/tsconfig/base.json ./node_modules/@webstudio-is/tsconfig/base.json
+
 # Abhängigkeiten installieren
 RUN \
     corepack enable pnpm && pnpm install
