@@ -29,7 +29,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Abhängigkeiten für die apps/builder-Anwendung installieren
-RUN cd apps/builder && pnpm install
+RUN corepack enable pnpm && cd apps/builder && pnpm install
 
 RUN \
     corepack enable pnpm && pnpm build
