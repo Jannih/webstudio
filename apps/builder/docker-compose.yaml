@@ -10,11 +10,24 @@ services:
     command: ["postgres", "-c", "log_statement=all"]
     restart: always
     environment:
-      # postgresql://user:pass@localhost:5432/webstudio
       POSTGRES_PASSWORD: pass
       POSTGRES_DB: webstudio
-      POSTGRES_USER: user
+      POSTGRES_USER: postgres
     volumes:
       - db:/var/lib/postgresql/data
     ports:
       - ${PGPORT:-5432}:5432
+
+  webstudio:
+    image: ghcr.io/jannih/webstudio:latest
+    ports:
+      - '3000:3000'
+    environment:
+      DATABASE_URL: postgresql://postgres:pass@db/webstudio?pgbouncer=true
+      DIRECT_URL: postgresql://postgres:pass@db/webstudio
+      AUTH_SECRET: "your-auth-secret"
+      DEV_LOGIN: "true"
+      NODE_ENV: production
+    depends_on:
+      - db
+    restart: unless-stopped
