@@ -12,8 +12,8 @@ COPY package.json pnpm-lock.yaml* ./
 # Patch-Dateien kopieren (falls vorhanden)
 COPY patches ./patches
 
-# tsconfig base.json kopieren
-COPY packages/tsconfig/base.json ./packages/tsconfig/base.json
+# tsconfig base.json in das Stammverzeichnis kopieren
+COPY packages/tsconfig/base.json ./base.json
 
 # Abhängigkeiten installieren
 RUN \
