@@ -15,6 +15,9 @@ COPY patches ./patches
 # tsconfig base.json in das node_modules-Verzeichnis des @webstudio-is/tsconfig-Pakets kopieren
 COPY packages/tsconfig/base.json ./node_modules/@webstudio-is/tsconfig/base.json
 
+# remix global installieren
+RUN npm install -g remix
+
 # Abhängigkeiten installieren
 RUN \
     corepack enable pnpm && pnpm install
