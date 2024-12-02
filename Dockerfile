@@ -4,6 +4,9 @@ FROM node:20-alpine
 # Arbeitsverzeichnis festlegen
 WORKDIR /app
 
+# Dateien des Paketmanagers kopieren
+COPY package.json pnpm-lock.yaml* ./
+
 # Abhängigkeiten installieren
 RUN apk add --no-cache libc6-compat
 RUN npm install -g pnpm
