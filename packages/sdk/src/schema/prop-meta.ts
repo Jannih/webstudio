@@ -175,6 +175,16 @@ const Action = z.object({
   defaultValue: z.undefined().optional(),
 });
 
+// Server-side actions with visual configuration (for auth flows, etc.)
+// Uses control: "action" for the UI, but type: "json" for storage
+// This allows the value to be passed directly to components as JSON
+const ServerActions = z.object({
+  ...common,
+  control: z.literal("action"),
+  type: z.literal("json"),
+  defaultValue: z.undefined().optional(),
+});
+
 const TextContent = z.object({
   ...common,
   control: z.literal("textContent"),
@@ -210,6 +220,7 @@ export const PropMeta = z.union([
   Json,
   Date,
   Action,
+  ServerActions,
   TextContent,
   AnimationAction,
 ]);

@@ -16,6 +16,7 @@ import {
   formIdFieldName,
   formBotFieldName,
   cachedFetch,
+  parseCookieHeader,
 } from "@webstudio-is/sdk/runtime";
 import {
   ReactSdkContext,
@@ -84,11 +85,15 @@ export const loader = async (arg: LoaderFunctionArgs) => {
   url.protocol = "https";
 
   const params = getRemixParams(arg.params);
+  // Parse cookies from request for use in expressions like system.cookies.access_token
+  const cookieHeader = arg.request.headers.get("Cookie") ?? "";
+  const cookies = parseCookieHeader(cookieHeader);
   const system = {
     params,
     search: Object.fromEntries(url.searchParams),
     origin: url.origin,
     pathname: url.pathname,
+    cookies,
   };
 
   const resources = await loadResources(
@@ -218,11 +223,15 @@ export const action = async ({
 
     const formData = await request.formData();
 
+    // Parse cookies for form action handling
+    const cookieHeader = request.headers.get("Cookie") ?? "";
+    const cookies = parseCookieHeader(cookieHeader);
     const system = {
       params: {},
       search: {},
       origin: url.origin,
       pathname: url.pathname,
+      cookies,
     };
 
     const resourceName = formData.get(formIdFieldName);

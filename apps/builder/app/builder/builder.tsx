@@ -70,6 +70,7 @@ import { useInertHandlers } from "./shared/inert-handlers";
 import { TextToolbar } from "./features/workspace/canvas-tools/text-toolbar";
 import { SyncClient } from "~/shared/sync-client";
 import { RemoteDialog } from "./features/help/remote-dialog";
+import { useActionExecutor } from "./shared/use-action-executor";
 
 registerContainers();
 
@@ -286,6 +287,9 @@ export const Builder = ({
   useEffect(() => {
     $publisher.set({ publish });
   }, [publish]);
+
+  // Handle action execution requests from canvas
+  useActionExecutor(publish);
 
   useSyncServer({
     projectId: project.id,

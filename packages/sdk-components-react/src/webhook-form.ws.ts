@@ -12,8 +12,9 @@ export const meta: WsComponentMeta = {
   states: [
     { selector: "[data-state=error]", label: "Error" },
     { selector: "[data-state=success]", label: "Success" },
+    { selector: "[data-state=loading]", label: "Loading" },
   ],
-  initialProps: ["id", "class", "state", "action"],
+  initialProps: ["id", "class", "state", "action", "onSubmitActions"],
   props: {
     ...props,
     action: {
@@ -21,6 +22,13 @@ export const meta: WsComponentMeta = {
       control: "resource",
       description:
         "The URI of a program that processes the information submitted via the form.",
+      required: false,
+    },
+    onSubmitActions: {
+      type: "json",
+      control: "action",
+      description:
+        "Server-side actions to execute on form submit. Use for authentication flows with httpOnly cookies.",
       required: false,
     },
   },

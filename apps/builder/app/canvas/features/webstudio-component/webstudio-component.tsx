@@ -373,6 +373,14 @@ const mergeProps = (
     if (isHandler === false) {
       continue;
     }
+    // Only treat as handler if at least one value is actually a function
+    // This allows data props like onSubmitActions (JSON array) to pass through unchanged
+    const isActualHandler =
+      typeof restPropValue === "function" ||
+      typeof instancePropValue === "function";
+    if (isActualHandler === false) {
+      continue;
+    }
     // combine handlers for preview
     if (callbackStrategy === "merge") {
       props[propName] = (...args: unknown[]) => {

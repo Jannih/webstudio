@@ -118,6 +118,16 @@ export default defineConfig(({ mode }) => {
                 credentials: true,
               });
             }
+
+            // Allow CORS for /rest/actions path (used by canvas iframe for server actions)
+            // This is same-origin in production but needs CORS in dev due to subdomain setup
+            if (url.pathname === "/rest/actions" && isBuilderUrl(url.href)) {
+              return callback(null, {
+                origin: true, // Allow the requesting origin
+                preflightContinue: false,
+                credentials: true,
+              });
+            }
           }
 
           if (req.method === "OPTIONS") {

@@ -12,6 +12,7 @@ import { JsonControl } from "./json";
 import { TextContent } from "./text-content";
 import { ResourceControl } from "./resource-control";
 import { TagControl } from "./tag-control";
+import { ActionControl } from "./action";
 
 export const renderControl = ({
   meta,
@@ -34,13 +35,18 @@ export const renderControl = ({
     return;
   }
 
-  // @todo remove once ui for action is implemented
-  if (prop?.type === "action") {
-    return;
-  }
-
-  if (meta.control === "action") {
-    return;
+  // Render action control for action props
+  if (meta.control === "action" || prop?.type === "action") {
+    return (
+      <ActionControl
+        key={key}
+        prop={prop}
+        propName={rest.propName}
+        onChange={rest.onChange}
+        instanceId={rest.instanceId}
+        computedValue={rest.computedValue}
+      />
+    );
   }
 
   if (meta.control === "json") {

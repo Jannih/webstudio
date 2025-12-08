@@ -1,6 +1,7 @@
 export * from "./resource-loader";
 export * from "./to-string";
 export * from "./form-fields";
+export { parseCookieHeader, serializeCookie } from "./cookie-expression";
 
 export const tagProperty = "data-ws-tag";
 

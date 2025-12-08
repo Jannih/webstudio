@@ -1,10 +1,32 @@
 import { z } from "zod";
 
+/**
+ * System context available in expressions at runtime.
+ *
+ * This object is populated from the request and passed to expressions,
+ * resources, and components during rendering.
+ */
 export type System = {
+  /** URL path parameters from dynamic routes (e.g., /blog/:slug) */
   params: Record<string, string | undefined>;
+  /** URL query/search parameters (e.g., ?foo=bar) */
   search: Record<string, string | undefined>;
+  /** Current URL pathname */
   pathname: string;
+  /** Current origin (e.g., https://example.com) */
   origin: string;
+  /**
+   * Cookies from the request.
+   *
+   * Note: For httpOnly cookies, values are only available server-side.
+   * In the browser, httpOnly cookie values will be undefined but their
+   * existence can still be checked (key will exist with undefined value).
+   *
+   * Usage in expressions:
+   * - system.cookies.access_token - Get cookie value
+   * - system.cookies?.access_token != null - Check if cookie exists
+   */
+  cookies?: Record<string, string | undefined>;
 };
 
 const MIN_TITLE_LENGTH = 2;
