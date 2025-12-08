@@ -17,7 +17,6 @@ export * from "./schema/actions";
 export * from "./core-metas";
 export * from "./action-executor";
 export * from "./cookie-expression";
-export * from "./client-actions";
 export * from "./instances-utils";
 export * from "./page-utils";
 export * from "./scope";
