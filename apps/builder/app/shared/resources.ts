@@ -124,3 +124,53 @@ export const computeResourceRequest = (
   }
   return request;
 };
+
+/**
+ * Action config type for CallApi actions
+ */
+type CallApiActionConfig = {
+  id: string;
+  url?: string;
+  method?: string;
+  headers?: Array<{ name: string; value: string }>;
+  body?: string;
+};
+
+/**
+ * Convert a CallApi action config to a ResourceRequest for caching.
+ * This allows actions to use the same caching infrastructure as resources.
+ *
+ * @param action - The CallApi action configuration
+ * @param values - Variable values for expression evaluation
+ * @param testCredentials - Optional test credentials for formData substitution
+ */
+export const computeActionRequest = (
+  action: CallApiActionConfig,
+  values: Map<DataSource["id"], unknown>,
+  testCredentials?: Record<string, string>
+): ResourceRequest => {
+  // Merge test credentials into a formData-like structure for expression evaluation
+  const mergedValues = new Map(values);
+  if (testCredentials && Object.keys(testCredentials).length > 0) {
+    mergedValues.set("formData", testCredentials);
+  }
+
+  const request: ResourceRequest = {
+    name: `action_${action.id}`,
+    method: (action.method ?? "POST").toLowerCase() as
+      | "get"
+      | "post"
+      | "put"
+      | "delete",
+    url: action.url ? computeExpression(action.url, mergedValues) : "",
+    searchParams: [],
+    headers: (action.headers ?? []).map(({ name, value }) => ({
+      name,
+      value: computeExpression(value, mergedValues),
+    })),
+  };
+  if (action.body !== undefined) {
+    request.body = computeExpression(action.body, mergedValues);
+  }
+  return request;
+};

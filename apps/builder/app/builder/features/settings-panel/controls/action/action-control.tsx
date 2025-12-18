@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import {
   Box,
   Button,
@@ -28,6 +28,18 @@ import {
 import type { ControlProps, PropValue } from "../../shared";
 import { VerticalLayout } from "../../shared";
 import { PropertyLabel, FieldLabel } from "../../property-label";
+import { useFormFieldNames } from "./use-action-scope";
+import { $testCookies, $testFormData } from "~/shared/system";
+import {
+  $resourcesCache,
+  computeActionRequest,
+  getResourceKey,
+  invalidateResource,
+  preloadResource,
+  $hasPendingResources,
+} from "~/shared/resources";
+import { $resourceVariableValues } from "~/shared/nano-states/props";
+import { useStore } from "@nanostores/react";
 
 /**
  * Server-side action types that can be configured visually.
@@ -693,6 +705,69 @@ const CallApiConfig = ({
   onChange: (action: ActionConfig) => void;
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showTestCredentials, setShowTestCredentials] = useState(false);
+  const [testCredentials, setTestCredentials] = useState<
+    Record<string, string>
+  >({});
+  // Test token for cookieToHeader simulation (cookies not available in builder)
+  const [testCookieToken, setTestCookieToken] = useState("");
+
+  // Subscribe to resource cache and loading state
+  const resourcesCache = useStore($resourcesCache);
+  const hasPendingResources = useStore($hasPendingResources);
+  const variableValues = useStore($resourceVariableValues);
+
+  // Get form field names from the parent form
+  const formFieldNames = useFormFieldNames();
+
+  // Check if cookieToHeader is configured
+  const hasCookieToHeader = Boolean(
+    action.cookieToHeader?.cookieName && action.cookieToHeader?.headerName
+  );
+
+  // Compute the resource request for this action (with test credentials)
+  const actionRequest = action.apiUrl
+    ? computeActionRequest(
+        {
+          id: action.id,
+          url: action.apiUrl,
+          method: action.apiMethod,
+          headers: action.apiHeaders,
+          body: action.apiBody,
+        },
+        variableValues,
+        Object.keys(testCredentials).length > 0 ? testCredentials : undefined
+      )
+    : null;
+
+  // Get cached response for this action
+  const resourceKey = actionRequest ? getResourceKey(actionRequest) : "";
+  const cachedResponse = resourceKey ? resourcesCache.get(resourceKey) : null;
+
+  // Sync test credentials to global store for auto-fetch
+  useEffect(() => {
+    $testFormData.set(testCredentials);
+  }, [testCredentials]);
+
+  // Sync test cookie token to $testCookies for ExpressionEditor autocomplete
+  useEffect(() => {
+    if (action.cookieToHeader?.cookieName && testCookieToken) {
+      $testCookies.set({
+        ...$testCookies.get(),
+        [action.cookieToHeader.cookieName]: testCookieToken,
+      });
+    }
+  }, [testCookieToken, action.cookieToHeader?.cookieName]);
+
+  // Load data through server-side proxy (like Resources)
+  const handleLoadData = () => {
+    if (!actionRequest) {
+      return;
+    }
+    // Invalidate cache and trigger reload
+    invalidateResource(actionRequest);
+    preloadResource(actionRequest);
+  };
 
   return (
     <Grid gap="3">
@@ -824,6 +899,145 @@ const CallApiConfig = ({
               />
             </FieldRow>
           </Grid>
+        </Box>
+      )}
+
+      <Separator />
+
+      {/* Test Credentials Section */}
+      {(formFieldNames.length > 0 || hasCookieToHeader) && (
+        <>
+          <Flex
+            align="center"
+            gap="2"
+            css={{ cursor: "pointer" }}
+            onClick={() => setShowTestCredentials(!showTestCredentials)}
+          >
+            {showTestCredentials ? <ChevronDownIcon /> : <ChevronRightIcon />}
+            <Text variant="labelsSentenceCase">Test Credentials</Text>
+            <EnhancedTooltip
+              content="Enter test values to test the API. Cookies are not available in the builder, so you can enter a test token here."
+              variant="wrapped"
+            >
+              <Text color="moreSubtle" css={{ fontSize: "12px" }}>
+                (not saved)
+              </Text>
+            </EnhancedTooltip>
+          </Flex>
+
+          {showTestCredentials && (
+            <Box css={{ pl: theme.spacing[5] }}>
+              <Grid gap="2">
+                <Text color="moreSubtle" css={{ fontSize: "12px" }}>
+                  Enter test values for testing. These values are only used for
+                  testing and are not saved.
+                </Text>
+
+                {/* Form field test values */}
+                {formFieldNames.map((fieldName) => (
+                  <FieldRow key={fieldName} label={fieldName}>
+                    <InputField
+                      type={
+                        fieldName.toLowerCase().includes("password")
+                          ? "password"
+                          : "text"
+                      }
+                      placeholder={`Test value for ${fieldName}`}
+                      value={testCredentials[fieldName] ?? ""}
+                      onChange={(e) =>
+                        setTestCredentials({
+                          ...testCredentials,
+                          [fieldName]: e.target.value,
+                        })
+                      }
+                    />
+                  </FieldRow>
+                ))}
+
+                {/* Cookie token test value (for cookieToHeader) */}
+                {hasCookieToHeader && (
+                  <FieldRow
+                    label={`Cookie: ${action.cookieToHeader?.cookieName}`}
+                    description={`Will be sent as ${action.cookieToHeader?.headerName}${action.cookieToHeader?.prefix ? ` with prefix "${action.cookieToHeader.prefix}"` : ""}`}
+                  >
+                    <InputField
+                      type="password"
+                      placeholder="Enter test token (e.g., JWT token)"
+                      value={testCookieToken}
+                      onChange={(e) => setTestCookieToken(e.target.value)}
+                    />
+                  </FieldRow>
+                )}
+              </Grid>
+            </Box>
+          )}
+          <Separator />
+        </>
+      )}
+
+      {/* Load Data Button - uses server-side proxy like Resources */}
+      <Flex gap="2" align="center">
+        <Button
+          color="neutral"
+          onClick={handleLoadData}
+          disabled={hasPendingResources || !action.apiUrl}
+        >
+          {hasPendingResources ? "Loading..." : "Load Data"}
+        </Button>
+        {!cachedResponse && action.apiUrl && (
+          <Text color="moreSubtle" css={{ fontSize: "12px" }}>
+            Click to fetch real API response
+          </Text>
+        )}
+      </Flex>
+
+      {/* Response Preview - shows real data from server-side fetch */}
+      {cachedResponse !== null && (
+        <Box
+          css={{
+            p: theme.spacing[3],
+            backgroundColor: theme.colors.backgroundControls,
+            borderRadius: theme.borderRadius[4],
+            border: `1px solid ${theme.colors.borderMain}`,
+            maxHeight: "200px",
+            overflow: "auto",
+          }}
+        >
+          <Flex justify="between" align="center" css={{ mb: theme.spacing[2] }}>
+            <Text variant="labelsSentenceCase" color="moreSubtle">
+              API Response
+            </Text>
+            {typeof cachedResponse === "object" &&
+              cachedResponse !== null &&
+              "ok" in cachedResponse && (
+                <Text
+                  color={
+                    (cachedResponse as { ok: boolean }).ok
+                      ? "success"
+                      : "destructive"
+                  }
+                  css={{ fontSize: "11px" }}
+                >
+                  {(cachedResponse as { ok: boolean }).ok
+                    ? "Success"
+                    : `Error: ${(cachedResponse as { statusText?: string }).statusText ?? "Unknown"}`}
+                </Text>
+              )}
+          </Flex>
+          <Text
+            variant="mono"
+            css={{ fontSize: "11px", whiteSpace: "pre-wrap" }}
+          >
+            {JSON.stringify(
+              typeof cachedResponse === "object" &&
+                cachedResponse !== null &&
+                "data" in cachedResponse
+                ? (cachedResponse as { data: unknown }).data
+                : cachedResponse,
+              null,
+              2
+            )}
+          </Text>
         </Box>
       )}
     </Grid>

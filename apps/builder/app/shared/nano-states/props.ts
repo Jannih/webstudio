@@ -34,10 +34,11 @@ import { $dataSourceVariables } from "./variables";
 import { uploadingFileDataToAsset } from "~/builder/shared/assets/asset-utils";
 import { $selectedPage, getInstanceKey } from "../awareness";
 import { computeExpression } from "../data-variables";
-import { $currentSystem } from "../system";
+import { $currentSystem, $testFormData } from "../system";
 import {
   $resourcesCache,
   computeResourceRequest,
+  computeActionRequest,
   getResourceKey,
   preloadResource,
 } from "../resources";
@@ -132,7 +133,7 @@ const getAction = (
  * which result in updated resource values and may trigger
  * circular updates
  */
-const $resourceVariableValues = computed(
+export const $resourceVariableValues = computed(
   [$dataSources, $selectedPage, $currentSystem],
   (dataSources, selectedPage, system) => {
     const values = new Map<string, unknown>();
@@ -611,6 +612,61 @@ export const subscribeResources = () => {
   return $computedResourceRequests.subscribe((computedResourceRequests) => {
     for (const resourceRequest of computedResourceRequests) {
       preloadResource(resourceRequest);
+    }
+  });
+};
+
+/**
+ * Computed store for action requests from CallApi actions.
+ * This allows actions to be auto-fetched like resources.
+ * Uses $testFormData for test credentials to make real API requests.
+ */
+const $computedActionRequests = computed(
+  [$selectedPage, $instances, $props, $resourceVariableValues, $testFormData],
+  (page, instances, props, values, testFormData) => {
+    const actionRequests: ResourceRequest[] = [];
+    if (page === undefined) {
+      return actionRequests;
+    }
+    const instanceIds = findTreeInstanceIds(instances, page.rootInstanceId);
+
+    // Only fetch if we have test credentials to substitute
+    const hasTestData = Object.keys(testFormData).length > 0;
+
+    // Find all onSubmitActions props with callApi actions
+    for (const prop of props.values()) {
+      if (
+        prop.name === "onSubmitActions" &&
+        prop.type === "json" &&
+        Array.isArray(prop.value) &&
+        instanceIds.has(prop.instanceId)
+      ) {
+        for (const action of prop.value) {
+          if (action.type === "callApi" && action.url) {
+            // Pass test credentials for expression interpolation
+            actionRequests.push(
+              computeActionRequest(
+                action,
+                values,
+                hasTestData ? testFormData : undefined
+              )
+            );
+          }
+        }
+      }
+    }
+    return actionRequests;
+  }
+);
+
+/**
+ * Subscribe to action config changes and preload them.
+ * This enables auto-fetch for CallApi actions like resources.
+ */
+export const subscribeActions = () => {
+  return $computedActionRequests.subscribe((actionRequests) => {
+    for (const request of actionRequests) {
+      preloadResource(request);
     }
   });
 };

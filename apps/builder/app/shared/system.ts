@@ -28,14 +28,32 @@ const extractParams = (pattern: string, path?: string) => {
   return params;
 };
 
+/**
+ * Store for test cookie values in the builder.
+ * These are used to simulate cookies for testing and autocomplete.
+ * Not persisted - only used during the builder session.
+ */
+export const $testCookies = atom<Record<string, string>>({});
+
+/**
+ * Store for test form data values in the builder.
+ * These simulate formData that would be submitted at runtime.
+ * Used to make real API requests with test credentials.
+ * Not persisted - only used during the builder session.
+ */
+export const $testFormData = atom<Record<string, string>>({});
+
 export const $currentSystem = computed(
-  [$publishedOrigin, $selectedPage, $systemDataByPage],
-  (origin, page, systemByPage) => {
+  [$publishedOrigin, $selectedPage, $systemDataByPage, $testCookies],
+  (origin, page, systemByPage, testCookies) => {
     const system: System = {
       search: {},
       params: {},
       pathname: "/",
       origin,
+      // Include cookies in builder for autocomplete and testing
+      // At runtime, these are populated from the actual request cookies
+      cookies: testCookies,
     };
     if (page === undefined) {
       return system;
@@ -49,6 +67,7 @@ export const $currentSystem = computed(
       params,
       pathname,
       origin,
+      cookies: testCookies,
     };
   }
 );

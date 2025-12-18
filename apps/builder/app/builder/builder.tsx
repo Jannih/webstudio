@@ -28,6 +28,7 @@ import {
   $pages,
   $project,
   subscribeResources,
+  subscribeActions,
   $authTokenPermissions,
   $publisherHost,
   $isDesignMode,
@@ -276,6 +277,7 @@ export const Builder = ({
   useToastErrors();
   useEffect(subscribeCommands, []);
   useEffect(subscribeResources, []);
+  useEffect(subscribeActions, []);
 
   useUnmount(() => {
     $pages.set(undefined);
